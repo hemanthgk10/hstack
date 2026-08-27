@@ -1,0 +1,8 @@
+# Git identity. Copy to local/gitconfig.local, or just create ~/.gitconfig.local
+# directly with:
+#   git config -f ~/.gitconfig.local user.name  "Your Name"
+#   git config -f ~/.gitconfig.local user.email "you@example.com"
+
+[user]
+	name = Your Name
+	email = you@example.com

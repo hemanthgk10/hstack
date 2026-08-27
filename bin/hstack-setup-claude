@@ -1,0 +1,150 @@
+#!/usr/bin/env bash
+# Configure Claude Code from the hstack repo: marketplaces, plugins, settings,
+# and preferences. This is what /setup-my-claude runs.
+#
+# Safe to run repeatedly. Already-installed plugins are skipped, and the
+# settings merge is a no-op when nothing changed.
+set -euo pipefail
+
+HSTACK_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+export HSTACK_ROOT
+# shellcheck source=../install/lib.sh
+source "$HSTACK_ROOT/install/lib.sh"
+
+export HSTACK_DRY_RUN="${HSTACK_DRY_RUN:-0}"
+CLAUDE_DIR="$HOME/.claude"
+
+for a in "$@"; do
+  case "$a" in
+    -n|--dry-run) HSTACK_DRY_RUN=1 ;;
+    -q|--quiet) export HSTACK_QUIET=1 ;;
+    -h|--help)
+      cat <<'USAGE'
+hstack-setup-claude — configure Claude Code from this repo.
+
+Usage: bin/hstack-setup-claude [-n|--dry-run] [-q|--quiet]
+
+Reads:
+  claude/marketplaces.txt   marketplaces to register
+  claude/plugins.txt        plugins to install and enable
+  claude/settings.json      merged into ~/.claude/settings.json
+  prefs/CLAUDE.md           written to ~/.claude/CLAUDE.md as a marker block
+  local/                    same, employer-scoped, if the directory exists
+USAGE
+      exit 0 ;;
+  esac
+done
+
+# Prefer the official installer's binary; a Homebrew cask copy is often older.
+if [ -x "$HOME/.local/bin/claude" ]; then
+  CLAUDE="$HOME/.local/bin/claude"
+elif hs_have claude; then
+  CLAUDE="$(command -v claude)"
+else
+  hs_die "claude is not on PATH"
+fi
+hs_have jq || hs_die "jq is required (brew install jq)"
+
+# --yes was added after 2.1.139. Detect rather than assume.
+YES_FLAG=""
+"$CLAUDE" plugin install --help 2>&1 | grep -q -- '--yes' && YES_FLAG="--yes"
+
+# Strip comments and blanks from a manifest file.
+_entries() { [ -f "$1" ] && sed -e 's/#.*//' -e 's/[[:space:]]*$//' "$1" | grep -v '^$' || true; }
+
+# ── marketplaces ────────────────────────────────────────────────────────────
+add_marketplaces() {
+  local file="$1" src
+  local listed; listed="$("$CLAUDE" plugin marketplace list 2>/dev/null || true)"
+  while IFS= read -r src; do
+    [ -n "$src" ] || continue
+    if printf '%s' "$listed" | grep -qF "$src"; then
+      hs_skip "registered $src"
+    else
+      if hs_run "$CLAUDE" plugin marketplace add "$src" >/dev/null 2>&1; then
+        hs_done "registered $src"
+      else
+        hs_warn "could not register marketplace: $src"
+      fi
+    fi
+  done <<< "$(_entries "$file")"
+}
+
+# ── plugins ─────────────────────────────────────────────────────────────────
+install_plugins() {
+  local file="$1" spec name
+  local installed; installed="$("$CLAUDE" plugin list 2>/dev/null || true)"
+  while IFS= read -r spec; do
+    [ -n "$spec" ] || continue
+    name="${spec%%@*}"
+    if printf '%s' "$installed" | grep -qE "(^|[[:space:]])${name}@"; then
+      hs_skip "installed  $spec"
+    else
+      if hs_run "$CLAUDE" plugin install "$spec" $YES_FLAG >/dev/null 2>&1; then
+        hs_done "installed  $spec"
+      else
+        hs_warn "install failed: $spec"
+        continue
+      fi
+    fi
+    # enable is idempotent and cheap; it also repairs a disabled plugin.
+    [ "$HSTACK_DRY_RUN" = 1 ] || "$CLAUDE" plugin enable "$name" >/dev/null 2>&1 || true
+  done <<< "$(_entries "$file")"
+}
+
+hs_head "marketplaces"
+add_marketplaces "$HSTACK_ROOT/claude/marketplaces.txt"
+[ -f "$HSTACK_ROOT/local/marketplaces.local.txt" ] && \
+  add_marketplaces "$HSTACK_ROOT/local/marketplaces.local.txt"
+
+hs_head "plugins"
+install_plugins "$HSTACK_ROOT/claude/plugins.txt"
+[ -f "$HSTACK_ROOT/local/plugins.local.txt" ] && \
+  install_plugins "$HSTACK_ROOT/local/plugins.local.txt"
+
+# ── settings ────────────────────────────────────────────────────────────────
+# Only non-plugin keys are merged. enabledPlugins and extraKnownMarketplaces
+# belong to the plugin CLI; writing them here would make the two fight.
+hs_head "settings"
+SETTINGS="$CLAUDE_DIR/settings.json"
+NEW="$HSTACK_ROOT/claude/settings.json"
+
+if [ -f "$SETTINGS" ]; then
+  merged="$(jq -s '.[0] * .[1]' "$SETTINGS" "$NEW")"
+else
+  merged="$(cat "$NEW")"
+fi
+
+if [ -f "$SETTINGS" ] && [ "$(jq -S . <<< "$merged")" = "$(jq -S . "$SETTINGS")" ]; then
+  hs_skip "unchanged  $SETTINGS"
+elif [ "$HSTACK_DRY_RUN" = 1 ]; then
+  hs_log "DRY  would merge claude/settings.json into $SETTINGS"
+else
+  hs_backup "$SETTINGS"
+  mkdir -p "$CLAUDE_DIR"
+  printf '%s\n' "$merged" | jq . > "$SETTINGS"
+  hs_ok "merged     $SETTINGS"
+fi
+
+# ── preferences ─────────────────────────────────────────────────────────────
+hs_head "preferences"
+hs_marker_block "$CLAUDE_DIR/CLAUDE.md" prefs < "$HSTACK_ROOT/prefs/CLAUDE.md"
+
+if [ -f "$HSTACK_ROOT/local/CLAUDE.local.md" ]; then
+  hs_marker_block "$CLAUDE_DIR/CLAUDE.md" local < "$HSTACK_ROOT/local/CLAUDE.local.md"
+else
+  hs_skip "no local/CLAUDE.local.md"
+fi
+
+# ── local skills ────────────────────────────────────────────────────────────
+if [ -d "$HSTACK_ROOT/local/skills" ]; then
+  hs_head "local skills"
+  for d in "$HSTACK_ROOT"/local/skills/*/; do
+    [ -d "$d" ] || continue
+    hs_link "${d%/}" "$CLAUDE_DIR/skills/$(basename "$d")"
+  done
+fi
+
+if [ "$HSTACK_DRY_RUN" != 1 ]; then
+  printf '\n  Restart Claude Code for plugin changes to take effect.\n\n'
+fi

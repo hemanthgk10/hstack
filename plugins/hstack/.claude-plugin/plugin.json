@@ -1,0 +1,12 @@
+{
+  "name": "hstack",
+  "version": "0.1.0",
+  "description": "Configures Claude Code from the hstack repo and adds review-until-convergence and parallel worktree agents.",
+  "author": {
+    "name": "Hemanth Gokavarapu"
+  },
+  "homepage": "https://github.com/hemanthgk10/hstack",
+  "repository": "https://github.com/hemanthgk10/hstack",
+  "license": "MIT",
+  "keywords": ["dotfiles", "setup", "workflow", "worktree", "code-review"]
+}

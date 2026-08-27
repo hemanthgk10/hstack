@@ -1,0 +1,5 @@
+# Employer-specific and machine-specific config. Never committed.
+local/
+
+.DS_Store
+*.swp

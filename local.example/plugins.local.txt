@@ -1,0 +1,3 @@
+# Employer-only plugins, as name@marketplace. Copy to local/plugins.local.txt.
+# Example:
+# internal-scanner@internal-claude-plugins

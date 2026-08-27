@@ -1,0 +1,22 @@
+# Plugins to install and enable, as name@marketplace, one per line.
+# Add a line here and re-run /setup-my-claude. Nothing else to change.
+
+# ── process ─────────────────────────────────────────────────────────────────
+superpowers@claude-plugins-official        # brainstorming, TDD, debugging, worktrees
+code-review@claude-plugins-official        # multi-agent PR review
+security-guidance@claude-plugins-official  # security review on edits and commits
+skill-creator@claude-plugins-official      # author and eval new skills
+
+# ── writing and design ──────────────────────────────────────────────────────
+humanizer@humanizer                        # strip AI tells from prose
+frontend-design@claude-plugins-official    # non-generic frontend output
+ui-ux-pro-max@ui-ux-pro-max-skill          # design systems, palettes, UX rules
+
+# ── context and cost ────────────────────────────────────────────────────────
+ponytail@ponytail                          # laziest solution that works; fewer tokens
+claude-mem@thedotmack                      # carry context between sessions
+context7@claude-plugins-official           # current library docs on demand
+
+# ── tooling ─────────────────────────────────────────────────────────────────
+chrome-devtools-mcp@claude-plugins-official  # drive and inspect a real browser
+claude-plan-statusline@claude-plan-statusline

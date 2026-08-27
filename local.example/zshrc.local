@@ -1,0 +1,13 @@
+# Sourced by ~/.zshrc near the end. Copy to local/zshrc.local.
+#
+# Anything here is machine- or employer-specific: it is not in git and it does
+# not follow you to a personal laptop.
+
+# Corporate TLS interception. Node needs the bundle explicitly.
+# export NODE_EXTRA_CA_CERTS="$HOME/system-ca-bundle.pem"
+
+# Where work repos live.
+# alias cdd='cd ~/Documents/work'
+
+# Cluster access.
+# export KUBECONFIG="$HOME/.kube/config"

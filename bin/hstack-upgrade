@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Pull the latest hstack and re-apply it.
+set -euo pipefail
+
+HSTACK_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$HSTACK_ROOT"
+
+if [ -n "$(git status --porcelain)" ]; then
+  echo "hstack has uncommitted changes. Commit or stash them first:" >&2
+  git status --short >&2
+  exit 1
+fi
+
+git pull --ff-only
+./setup-my-laptop --skip 00-preflight "$@"
+./bin/hstack-setup-claude "$@"

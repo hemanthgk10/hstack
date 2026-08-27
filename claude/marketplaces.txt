@@ -1,0 +1,12 @@
+# Marketplaces to register, one per line. Comments and blank lines ignored.
+#
+# hstack itself is NOT listed here: install/50-claude-bootstrap.sh registers
+# this clone as a directory marketplace so edits to plugins/hstack take effect
+# next session, with no commit-push-update cycle.
+
+anthropics/claude-plugins-official
+thedotmack/claude-mem
+nextlevelbuilder/ui-ux-pro-max-skill
+odysseasmas/claude-plan-statusline
+blader/humanizer
+DietrichGebert/ponytail

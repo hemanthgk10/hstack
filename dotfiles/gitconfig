@@ -1,0 +1,35 @@
+# hstack .gitconfig — symlinked from the hstack repo.
+#
+# There is deliberately no [user] section here. Identity is per-machine and
+# often per-employer, so it lives in ~/.gitconfig.local, which is not in git.
+# Create it with:
+#   git config -f ~/.gitconfig.local user.name  "Your Name"
+#   git config -f ~/.gitconfig.local user.email "you@example.com"
+
+[include]
+	path = ~/.gitconfig.local
+
+[init]
+	defaultBranch = main
+
+[pull]
+	rebase = true
+
+[push]
+	autoSetupRemote = true
+
+[fetch]
+	prune = true
+
+[diff]
+	algorithm = histogram
+	colorMoved = default
+
+[rerere]
+	enabled = true
+
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true

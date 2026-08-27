@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# Check that what hstack installs is actually in place. Exits non-zero and
+# lists what is wrong.
+set -uo pipefail
+
+HSTACK_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$HSTACK_ROOT/install/lib.sh"
+
+FAIL=0
+_ok()   { hs_ok   "$1"; }
+_bad()  { hs_warn "$1"; FAIL=1; }
+_check(){ if eval "$2" >/dev/null 2>&1; then _ok "$1"; else _bad "$1"; fi; }
+
+hs_head "commands"
+for c in brew git gh jq zsh claude node go; do
+  _check "$c" "command -v $c"
+done
+
+hs_head "fonts"
+for f in Regular Bold Italic "Bold Italic"; do
+  _check "MesloLGS NF $f" "[ -f \"\$HOME/Library/Fonts/MesloLGS NF $f.ttf\" ]"
+done
+
+hs_head "shell"
+_check "oh-my-zsh" "[ -d \"\$HOME/.oh-my-zsh\" ]"
+_check "powerlevel10k" "[ -d \"\$HOME/.oh-my-zsh/custom/themes/powerlevel10k\" ]"
+_check "zsh-autosuggestions" "[ -d \"\$HOME/.oh-my-zsh/custom/plugins/zsh-autosuggestions\" ]"
+_check "zsh-syntax-highlighting" "[ -d \"\$HOME/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting\" ]"
+_check "nvm" "[ -s \"\$HOME/.nvm/nvm.sh\" ]"
+_check "sdkman" "[ -s \"\$HOME/.sdkman/bin/sdkman-init.sh\" ]"
+
+hs_head "dotfiles"
+for pair in "zshrc:.zshrc" "p10k.zsh:.p10k.zsh" "gitconfig:.gitconfig"; do
+  src="$HSTACK_ROOT/dotfiles/${pair%%:*}"; dst="$HOME/${pair##*:}"
+  if [ "$(readlink "$dst" 2>/dev/null)" = "$src" ]; then
+    _ok "${pair##*:} -> repo"
+  else
+    _bad "${pair##*:} is not linked to $src"
+  fi
+done
+_check "git user.email set" "[ -n \"\$(git config user.email)\" ]"
+
+hs_head "iterm2"
+_check "hstack dynamic profile" \
+  "[ -f \"\$HOME/Library/Application Support/iTerm2/DynamicProfiles/hstack.json\" ]"
+
+hs_head "claude"
+if [ -x "$HOME/.local/bin/claude" ]; then CLAUDE="$HOME/.local/bin/claude"
+elif command -v claude >/dev/null 2>&1; then CLAUDE="$(command -v claude)"
+else CLAUDE=""; fi
+
+if [ -n "$CLAUDE" ]; then
+  installed="$("$CLAUDE" plugin list 2>/dev/null || true)"
+  while IFS= read -r spec; do
+    [ -n "$spec" ] || continue
+    name="${spec%%@*}"
+    if printf '%s' "$installed" | grep -qE "(^|[[:space:]])${name}@"; then
+      _ok "plugin $name"
+    else
+      _bad "plugin $name is not installed"
+    fi
+  done <<< "$(sed -e 's/#.*//' -e 's/[[:space:]]*$//' "$HSTACK_ROOT/claude/plugins.txt" | grep -v '^$')"
+
+  _check "settings.json" "[ -f \"\$HOME/.claude/settings.json\" ]"
+  _check "preferences block" "grep -q 'hstack:prefs' \"\$HOME/.claude/CLAUDE.md\""
+else
+  _bad "claude not on PATH"
+fi
+
+echo
+if [ $FAIL -eq 0 ]; then
+  hs_ok "everything checks out"
+else
+  hs_warn "some checks failed — see above"
+fi
+exit $FAIL

@@ -1,0 +1,10 @@
+# Employer-specific packages. Copy to local/Brewfile.local.
+#
+# Anything that would be wrong on a personal laptop, or wrong after changing
+# jobs: vendor CLIs, internal tooling, VPN clients.
+
+# tap "your-employer/tap"
+# brew "your-employer-cli"
+
+# brew "cloudflared"
+# brew "teleport"        # provides tsh

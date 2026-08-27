@@ -1,0 +1,58 @@
+# hstack .zshrc — symlinked from the hstack repo. Edit it there; edits here
+# ARE edits to the repo. Machine-specific and employer-specific settings go in
+# ~/.hstack.local, which is sourced near the bottom and never committed.
+
+# Powerlevel10k instant prompt. Keep this at the very top: anything that
+# writes to the console (password prompts, [y/n]) must go above it.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+export ZSH="$HOME/.oh-my-zsh"
+ZSH_THEME="powerlevel10k/powerlevel10k"
+
+# autojump needs the brew formula of the same name.
+plugins=(git zsh-autosuggestions zsh-syntax-highlighting autojump)
+
+source $ZSH/oh-my-zsh.sh
+
+# Prompt config. Run `p10k configure` to regenerate.
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+
+# ── aliases ─────────────────────────────────────────────────────────────────
+alias ll='ls -l'
+alias gs='git status'
+alias gpr='git pull --rebase'
+alias gcm='git commit -s -m'
+alias k='kubectl'
+alias kgpon='kubectl get pods -A'
+alias kgno='kubectl get nodes -o wide'
+
+# Start Claude Code in a fresh git worktree. Several sessions can then run
+# against the same repo without fighting over the working tree.
+alias cw='claude --worktree'
+
+# ── paths ───────────────────────────────────────────────────────────────────
+export PATH="/opt/homebrew/opt/mysql@8.0/bin:$PATH"
+export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
+
+# ── bun ─────────────────────────────────────────────────────────────────────
+# claude-mem runs on bun and its installer pulls one in.
+export BUN_INSTALL="$HOME/.bun"
+[ -d "$BUN_INSTALL/bin" ] && export PATH="$BUN_INSTALL/bin:$PATH"
+[ -s "$BUN_INSTALL/_bun" ] && source "$BUN_INSTALL/_bun"
+
+# ── node ────────────────────────────────────────────────────────────────────
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+# ── local overrides ─────────────────────────────────────────────────────────
+# Work email, corporate CA bundles, VPN helpers, per-machine paths. Not in git.
+[ -f "$HOME/.hstack.local" ] && source "$HOME/.hstack.local"
+
+# SDKMAN's own installer insists on being last, and it means it — sdkman-init.sh
+# rewrites PATH, so anything appended below it gets shadowed.
+export SDKMAN_DIR="$HOME/.sdkman"
+[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"

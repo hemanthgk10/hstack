@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+# hstack — set up a Mac.
+#
+# Safe to run repeatedly. Every module checks before it writes, and existing
+# files are moved to ~/.hstack-backup/<timestamp>/ rather than overwritten.
+set -euo pipefail
+
+HSTACK_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export HSTACK_ROOT
+
+MODULES=(00-preflight 10-brew 20-fonts 30-shell 40-iterm2 50-claude-bootstrap)
+
+usage() {
+  cat <<'USAGE'
+hstack — set up a Mac from a checked-in configuration.
+
+Usage: ./setup-my-laptop [options]
+
+Options:
+  -n, --dry-run        Print every change without making any.
+      --only <name>    Run one module only (repeatable).
+      --skip <name>    Skip a module (repeatable).
+  -q, --quiet          Errors and warnings only.
+  -l, --list           List modules and exit.
+  -h, --help           Show this help.
+
+Modules, in order:
+  00-preflight         Xcode Command Line Tools, Homebrew
+  10-brew              Brewfile: formulae, casks, taps
+  20-fonts             MesloLGS NF
+  30-shell             oh-my-zsh, powerlevel10k, plugins, nvm, sdkman, dotfiles
+  40-iterm2            Dynamic profile and app preferences
+  50-claude-bootstrap  Claude Code CLI, hstack marketplace and plugin
+
+Then run `claude` and `/setup-my-claude` for the Claude Code layer.
+
+Examples:
+  ./setup-my-laptop --dry-run
+  ./setup-my-laptop --only 30-shell
+  ./setup-my-laptop --skip 10-brew --skip 20-fonts
+
+Docs: https://github.com/hemanthgk10/hstack
+USAGE
+}
+
+ONLY=(); SKIP=()
+export HSTACK_DRY_RUN=0 HSTACK_QUIET=0
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -n|--dry-run) HSTACK_DRY_RUN=1 ;;
+    --only) shift; [ $# -gt 0 ] || { echo "--only needs a module name" >&2; exit 2; }; ONLY+=("$1") ;;
+    --skip) shift; [ $# -gt 0 ] || { echo "--skip needs a module name" >&2; exit 2; }; SKIP+=("$1") ;;
+    -q|--quiet) HSTACK_QUIET=1 ;;
+    -l|--list) printf '%s\n' "${MODULES[@]}"; exit 0 ;;
+    -h|--help) usage; exit 0 ;;
+    *) echo "unknown option: $1" >&2; echo "try --help" >&2; exit 2 ;;
+  esac
+  shift
+done
+
+# shellcheck source=install/lib.sh
+source "$HSTACK_ROOT/install/lib.sh"
+
+# Validate module names before doing anything, so a typo fails fast rather
+# than silently running nothing.
+_known() { local m; for m in "${MODULES[@]}"; do [ "$m" = "$1" ] && return 0; done; return 1; }
+# bash 3.2 (what macOS ships) treats "${arr[@]}" on an empty array as unbound
+# under set -u, so every expansion here uses the ${arr[@]+...} guard.
+for m in ${ONLY[@]+"${ONLY[@]}"} ${SKIP[@]+"${SKIP[@]}"}; do
+  _known "$m" || hs_die "unknown module: $m (see --list)"
+done
+
+_wanted() {
+  local m="$1" s
+  if [ ${#ONLY[@]} -gt 0 ]; then
+    local found=1; for s in ${ONLY[@]+"${ONLY[@]}"}; do [ "$s" = "$m" ] && found=0; done
+    [ $found -eq 0 ] || return 1
+  fi
+  for s in ${SKIP[@]+"${SKIP[@]}"}; do [ "$s" = "$m" ] && return 1; done
+  return 0
+}
+
+if [ "$HSTACK_DRY_RUN" = 1 ]; then
+  hs_head "dry run — nothing will be changed"
+fi
+
+for m in "${MODULES[@]}"; do
+  _wanted "$m" || { hs_skip "module     $m (skipped)"; continue; }
+  # shellcheck source=/dev/null
+  source "$HSTACK_ROOT/install/$m.sh"
+done
+
+if [ "$HSTACK_DRY_RUN" = 1 ]; then
+  hs_head "dry run complete — no changes were made"
+fi

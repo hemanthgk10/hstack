@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# Pull the current iTerm2 profile back into the repo.
+#
+# Dynamic Profiles cannot be edited in iTerm2's UI, so the workflow is: tweak
+# the Default profile in Settings, then run this to capture the change. Keys
+# that are machine-specific or private are dropped on the way out.
+set -euo pipefail
+
+HSTACK_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DEST="$HSTACK_ROOT/iterm2/hstack.json"
+
+python3 - "$DEST" <<'PY'
+import plistlib, json, subprocess, os, sys
+
+dest = sys.argv[1]
+raw = subprocess.run(
+    ['plutil', '-convert', 'xml1', '-o', '-',
+     os.path.expanduser('~/Library/Preferences/com.googlecode.iterm2.plist')],
+    capture_output=True, check=True).stdout
+prefs = plistlib.loads(raw)
+
+bookmarks = prefs.get('New Bookmarks', [])
+if not bookmarks:
+    sys.exit('no iTerm2 profiles found')
+
+# Prefer a profile literally named hstack; fall back to the first one.
+prof = next((b for b in bookmarks if b.get('Name') == 'hstack'), bookmarks[0])
+
+# Never export: identifiers, window geometry, and the AI/OpenAI settings.
+DROP_EXACT = {'Guid', 'Working Directory', 'Shortcut', 'Tags', 'Description',
+              'Default Bookmark', 'BM Growl', 'Disable Window Resizing'}
+DROP_PREFIX = ('Ai', 'AIFeature', 'NoSync', 'NSWindow', 'Background Image')
+
+out = {k: v for k, v in prof.items()
+       if k not in DROP_EXACT and not k.startswith(DROP_PREFIX)}
+out['Name'] = 'hstack'
+out['Guid'] = 'hstack-default-profile'
+
+with open(dest, 'w') as f:
+    json.dump({'Profiles': [out]}, f, indent=2, sort_keys=True)
+    f.write('\n')
+print(f'exported {len(out)} keys from profile "{prof.get("Name")}" -> {dest}')
+PY
+
+git -C "$HSTACK_ROOT" diff --stat -- iterm2/hstack.json

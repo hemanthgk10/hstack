@@ -1,0 +1,58 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck
+        run: |
+          sudo apt-get update && sudo apt-get install -y shellcheck
+          shellcheck -x -P install:bin:. \
+            setup-my-laptop install/*.sh bin/hstack-*
+
+  bash32:
+    # macOS ships bash 3.2. Catch bashisms that only work in 4+.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: parse with /bin/bash
+        run: |
+          /bin/bash --version | head -1
+          for f in setup-my-laptop install/*.sh bin/hstack-*; do
+            /bin/bash -n "$f" || exit 1
+          done
+      - name: --help and --list run
+        run: |
+          ./setup-my-laptop --help
+          ./setup-my-laptop --list
+
+  manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: json is valid
+        run: |
+          for f in .claude-plugin/marketplace.json \
+                   plugins/hstack/.claude-plugin/plugin.json \
+                   claude/settings.json \
+                   iterm2/hstack.json; do
+            jq -e . "$f" > /dev/null || { echo "invalid: $f"; exit 1; }
+          done
+      - name: versions agree
+        run: |
+          v=$(cat VERSION)
+          p=$(jq -r .version plugins/hstack/.claude-plugin/plugin.json)
+          [ "$v" = "$p" ] || { echo "VERSION=$v but plugin.json=$p"; exit 1; }
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: nothing employer-specific or secret
+        run: ./bin/hstack-secret-sweep

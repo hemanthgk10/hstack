@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace-manifest.json",
+  "name": "hstack",
+  "owner": {
+    "name": "Hemanth Gokavarapu",
+    "url": "https://github.com/hemanthgk10"
+  },
+  "description": "Personal Claude Code setup: preferences, custom skills, and a declarative plugin set.",
+  "plugins": [
+    {
+      "name": "hstack",
+      "source": "./plugins/hstack",
+      "description": "Configures Claude Code from the hstack repo and adds review-until-convergence and parallel worktree agents.",
+      "license": "MIT",
+      "category": "productivity",
+      "keywords": ["dotfiles", "setup", "workflow", "worktree", "code-review"]
+    }
+  ]
+}
