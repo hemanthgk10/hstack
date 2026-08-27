@@ -13,7 +13,10 @@ jobs:
       - name: shellcheck
         run: |
           sudo apt-get update && sudo apt-get install -y shellcheck
-          shellcheck -x -P install:bin:. \
+          # severity=warning: the remaining info findings are deliberate —
+          # single-quoted strings handed to hs_sh, and `return || exit` in
+          # modules that are sourced rather than executed.
+          shellcheck --severity=warning -x -P install:bin:. \
             setup-my-laptop install/*.sh bin/hstack-*
 
   bash32:

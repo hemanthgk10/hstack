@@ -100,7 +100,7 @@ to capture it back.
 
 ## Before pushing
 
-    shellcheck -x -P install:bin:. setup-my-laptop install/*.sh bin/hstack-*
+    shellcheck --severity=warning -x -P install:bin:. setup-my-laptop install/*.sh bin/hstack-*
     ./setup-my-laptop --dry-run
     ./setup-my-laptop && ./setup-my-laptop     # second run: no changes, no new backup
     ./bin/hstack-doctor

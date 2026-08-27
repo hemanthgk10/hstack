@@ -10,7 +10,7 @@ HSTACK_QUIET="${HSTACK_QUIET:-0}"
 HSTACK_BACKUP_DIR="${HSTACK_BACKUP_DIR:-}"
 
 # ── output ──────────────────────────────────────────────────────────────────
-_hs_c() { [ -t 1 ] && printf '\033[%sm' "$1" || true; }
+_hs_c() { if [ -t 1 ]; then printf '\033[%sm' "$1"; fi; }
 hs_log()  { [ "$HSTACK_QUIET" = 1 ] && return 0; printf '%s  %s%s\n' "$(_hs_c 34)··$(_hs_c 0)" "$*" ""; }
 hs_ok()   { [ "$HSTACK_QUIET" = 1 ] && return 0; printf '%s  %s\n' "$(_hs_c 32)ok$(_hs_c 0)" "$*"; }
 hs_skip() { [ "$HSTACK_QUIET" = 1 ] && return 0; printf '%s  %s\n' "$(_hs_c 90)--$(_hs_c 0)" "$*"; }
