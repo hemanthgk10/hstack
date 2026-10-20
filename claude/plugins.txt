@@ -15,6 +15,7 @@ ui-ux-pro-max@ui-ux-pro-max-skill          # design systems, palettes, UX rules
 # ── context and cost ────────────────────────────────────────────────────────
 ponytail@ponytail                          # laziest solution that works; fewer tokens
 claude-mem@thedotmack                      # carry context between sessions
+oh-my-claudecode@omc                       # multi-agent orchestration, LSP, notepad
 context7@claude-plugins-official           # current library docs on demand
 
 # ── tooling ─────────────────────────────────────────────────────────────────

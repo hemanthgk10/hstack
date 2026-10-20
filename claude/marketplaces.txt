@@ -10,3 +10,4 @@ nextlevelbuilder/ui-ux-pro-max-skill
 odysseasmas/claude-plan-statusline
 blader/humanizer
 DietrichGebert/ponytail
+Yeachan-Heo/oh-my-claudecode

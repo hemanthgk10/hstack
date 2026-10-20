@@ -4,10 +4,12 @@
 # which is gitignored. Test: would this be wrong on a personal laptop, or wrong
 # after changing jobs? If yes to either, it belongs in local/.
 
-# redpanda is not in homebrew-core, so its tap is required. Homebrew 6 asks
-# you to trust a third-party tap before loading its formulae:
+# redpanda and agentty are not in homebrew-core, so their taps are required.
+# Homebrew 6 asks you to trust a third-party tap before loading its formulae:
 #   brew trust redpanda-data/tap
+#   brew trust empty-user77/agentty
 tap "redpanda-data/tap"
+tap "empty-user77/agentty"
 
 # ── shell and core ──────────────────────────────────────────────────────────
 brew "bash"               # macOS ships bash 3.2 from 2007; sdkman needs 4+
@@ -57,6 +59,7 @@ cask "intellij-idea"
 
 # ── claude ──────────────────────────────────────────────────────────────────
 cask "claude"             # desktop app
+cask "empty-user77/agentty/agentty"
 cask "gcloud-cli"
 
 # The claude CLI is deliberately NOT installed from brew. The official
